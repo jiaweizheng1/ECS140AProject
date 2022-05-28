@@ -1,27 +1,12 @@
-/*
-struct Scanner
-{
-    cur_line_num: i32,
-    cur_char_pos: i32
-}
-
-impl Scanner
-{
-    fn init() -> Scanner
-    {
-        return Scanner
-        {
-            cur_line_num: 0,
-            cur_char_pos: 0
-        }
-    }
-}
-*/
-
 use std::env;
 use std::io::Read;
 use std::fs::File;
+use custom_error::custom_error;
 use std::process::exit; 
+
+custom_error!{pub MyError
+    Invalid = "Syntax error at character position"
+}
 
 enum TokenType
 {
@@ -71,6 +56,26 @@ impl Token
     }
 }
 
+struct CStream
+{
+    contents: String,
+}
+
+impl CStream
+{
+    fn init(in_file_name: &str) -> CStream
+    {
+        let mut file = File::open(in_file_name.to_string()).expect("Error Opening File");
+        let mut temp_contents = String::new();
+        file.read_to_string(&mut temp_contents).expect("Error Reading File");
+
+        CStream
+        {
+            contents: temp_contents,
+        }
+    }
+}
+
 fn Scanner(input: String) -> Vec<Token>
 {
     let keywords = vec!["unsigned", "char", "short", "int", "long", "float", "double", "while", "if", "return", "void", "main"].iter().map(|x| x.to_string()).collect::<Vec<String>>();
@@ -115,7 +120,20 @@ fn Scanner(input: String) -> Vec<Token>
                 }
                 if text != "".to_string()
                 {
-                    token_list.push(Token::init(text, TokenType::Identifier, cur_line_num, token_char_pos));
+                    let mut t: TokenType = TokenType::Invalid;
+                    if Identifier(text.to_string())
+                    {
+                        t = TokenType::Identifier;
+                    }
+                    else if IntConstant(text.to_string())
+                    {
+                        t = TokenType::IntConstant;
+                    }
+                    else if FloatConstant(text.to_string())
+                    {
+                        t = TokenType::FloatConstant;
+                    }
+                    token_list.push(Token::init(text, t, cur_line_num, token_char_pos));
                     text = "".to_string();
                 }
                 token_list.push(Token::init((input.as_bytes()[i] as char).to_string(), TokenType::Operator, cur_line_num, cur_char_pos));
@@ -149,7 +167,20 @@ fn Scanner(input: String) -> Vec<Token>
                 }
                 if text != "".to_string()
                 {
-                    token_list.push(Token::init(text, TokenType::Identifier, cur_line_num, token_char_pos));
+                    let mut t: TokenType = TokenType::Invalid;
+                    if Identifier(text.to_string())
+                    {
+                        t = TokenType::Identifier;
+                    }
+                    else if IntConstant(text.to_string())
+                    {
+                        t = TokenType::IntConstant;
+                    }
+                    else if FloatConstant(text.to_string())
+                    {
+                        t = TokenType::FloatConstant;
+                    }
+                    token_list.push(Token::init(text, t, cur_line_num, token_char_pos));
                     text = "".to_string();
                 }
             }
@@ -182,7 +213,20 @@ fn Scanner(input: String) -> Vec<Token>
                 }
                 if text != "".to_string()
                 {
-                    token_list.push(Token::init(text, TokenType::Identifier, cur_line_num, token_char_pos));
+                    let mut t: TokenType = TokenType::Invalid;
+                    if Identifier(text.to_string())
+                    {
+                        t = TokenType::Identifier;
+                    }
+                    else if IntConstant(text.to_string())
+                    {
+                        t = TokenType::IntConstant;
+                    }
+                    else if FloatConstant(text.to_string())
+                    {
+                        t = TokenType::FloatConstant;
+                    }
+                    token_list.push(Token::init(text, t, cur_line_num, token_char_pos));
                     text = "".to_string();
                 }
 
@@ -207,36 +251,96 @@ fn Scanner(input: String) -> Vec<Token>
         cur_char_pos += 1;
     }
 
-    println!("\n");
-    for index in 0..token_list.len()
-    {
-        println!("Token {} = {}", index, token_list[index].text);
-        println!("Token type: {}", token_list[index].token_type.as_str());
-        println!("Token line_num: {}", token_list[index].line_num);
-        println!("Token char_pos: {}\n", token_list[index].char_pos);
-    }
-
     return token_list;
 }
 
-struct CStream
+fn Digit(c: char) -> bool
 {
-    contents: String,
+    if c >= '0' && c <= '9'
+    {
+        return true;
+    }
+    return false;
 }
 
-impl CStream
+fn Alpha(c: char) -> bool
 {
-    fn init(in_file_name: &str) -> CStream
+    if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
     {
-        let mut file = File::open(in_file_name.to_string()).expect("Error Opening File");
-        let mut temp_contents = String::new();
-        file.read_to_string(&mut temp_contents).expect("Error Reading File");
+        return true;
+    }
+    return false;
+}
 
-        CStream
+fn IntConstant(input: String) -> bool
+{
+    let mut i: usize = 1;
+    if input.as_bytes()[0] as char == '-' || Digit(input.as_bytes()[0] as char)
+    {
+        while(i < input.len())
         {
-            contents: temp_contents,
+            if !Digit(input.as_bytes()[i] as char)
+            {
+                return false;
+            }
+            i += 1;
+        }
+        return true;
+    }
+    return false;
+}
+
+fn FloatConstant(input: String) -> bool
+{
+    let mut i: usize = 1;
+    if IntConstant(input.to_string())
+    {
+        return true;
+    }
+    if input.as_bytes()[0] as char == '-' || Digit(input.as_bytes()[0] as char)
+    {
+        while(i < input.len())
+        {
+            if(input.as_bytes()[i] as char == '.')
+            {
+                i += 1;
+                break;
+            }
+            else if !Digit(input.as_bytes()[i] as char)
+            {
+                return false;
+            }
+            i += 1;
         }
     }
+    while(i < input.len())
+    {
+        if !Digit(input.as_bytes()[i] as char)
+        {
+            return false;
+        }
+        i += 1;
+    }
+    return true;
+}
+
+fn Identifier(input: String) -> bool
+{
+    let mut i: usize = 1;
+
+    if input.as_bytes()[0] as char == '_' || Alpha(input.as_bytes()[0] as char)
+    {
+        while(i < input.len())
+        {
+            if !(input.as_bytes()[i] as char == '_' || Alpha(input.as_bytes()[i] as char) || Digit(input.as_bytes()[i] as char))
+            {
+                return false;
+            }
+            i += 1;
+        }
+        return true;
+    }
+    return false;
 }
 
 fn main() {
@@ -252,5 +356,14 @@ fn main() {
     let mut f: CStream = CStream::init(&args[1]);
     println!("{:?}", f.contents);
 
-    Scanner(f.contents);
+    let mut all_tokens: Vec<Token> = Scanner(f.contents);
+
+    println!("\n");
+    for index in 0..all_tokens.len()
+    {
+        println!("Token {} = {}", index, all_tokens[index].text);
+        println!("Token type: {}", all_tokens[index].token_type.as_str());
+        println!("Token line_num: {}", all_tokens[index].line_num);
+        println!("Token char_pos: {}\n", all_tokens[index].char_pos);
+    }
 }
