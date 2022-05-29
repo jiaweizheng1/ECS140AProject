@@ -355,20 +355,23 @@ custom_error!{pub MyError
     whileloop = "WhileLoop := while ( Expression ) Block",
     assignment = "Assignment := Identifier = {{ Identifier =}} Expression ;",
     floattype = "FloatType := float | double",
-    integertype = "IntergerType := [unsigned] ( char | short | int | long )",
+    integertype = "IntegerType := [unsigned] ( char | short | int | long )",
     parameter = "Parameter := DataType Identifier",
     statement = "Statement := Assignment | Whileloop | IfStatement | ReturnStatement | (Expression ;)",
     constant = "Constant := IntConstant | FloatConstant",
-    datatype = "DataType := IntergerType | FloatType",
+    datatype = "DataType := IntegerType | FloatType",
     parameterblock = "ParameterBlock := ( [Parameter {{, Parameter}}] )",
     block = "Block := {{ {{Declaration}} {{Statement}} {{FunctionDefinition}} }}",
     functiondeclaration = "FunctionDeclaration := ParameterBlock ;",
-    variabledeclaration = "VariableDDeclaration := [= Constant] ;",
+    variabledeclaration = "VariableDeclaration := [= Constant] ;",
     declarationtype = "DeclarationType := DataType Identifier",
     functiondefinition = "FunctionDefinition := DeclarationType ParameterBlock Block",
     maindeclaration = "MainDeclaration := void main ( ) Block",
     declaration = "Declaration := DeclarationType (VariableDeclaration | FunctionDeclaration)",
-    program = "Program := {{Declaration}} MainDeclaration {{FunctionDefinition}}"
+    program = "Program := {{Declaration}} MainDeclaration {{FunctionDefinition}}",
+    intconstant = "IntConstant := [ - ] Digit {{ Digit }}",
+    floatconstant = "FloatConstant := [ - ] Digit {{ Digit }} [ . Digit {{ Digit }} ]",
+    identifier = "Identifier := ( _ | Alpha ) {{ ( _ | Digit | Alpha) }}"
 }
 
 struct Parser
@@ -387,40 +390,261 @@ impl Parser
             index: 0
         }
     }
-    fn MultOperator(&mut self) -> bool
+    fn MultOperator(&mut self)
     {
-        if self.t.len() > self.index && (self.t[self.index].text == "*" || self.t[self.index].text == "/")
+        if self.t[self.index].text == "*" || self.t[self.index].text == "/"
         {
             self.index += 1;
-            return true;
         }
-        if self.t.len() == self.index
+        else
         {
-            self.index -= 1;
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::multoperator);
+            exit(1);
         }
-        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::multoperator);
-        exit(1);
     }
-    fn AddOperator(&mut self) -> bool
+    fn AddOperator(&mut self)
     {
-        if self.t.len() > self.index && (self.t[self.index].text  == "+" || self.t[self.index].text == "-")
+        if self.t[self.index].text  == "+" || self.t[self.index].text == "-"
         {
             self.index += 1;
-            return true;
         }
-        if self.t.len() == self.index
+        else
         {
-            self.index -= 1;
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::addoperator);
+            exit(1);
         }
-        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::addoperator);
-        exit(1);
     }
+    fn RelationOperator(&mut self)
+    {
+        if self.t[self.index].text  == "==" || self.t[self.index].text == "<" || self.t[self.index].text == ">" || self.t[self.index].text == "<=" || self.t[self.index].text == ">=" || self.t[self.index].text == "!="
+        {
+            self.index += 1;
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::relationoperator);
+            exit(1);
+        }
+    }
+    fn FloatType(&mut self)
+    {
+        if self.t[self.index].text  == "float" || self.t[self.index].text == "double" 
+        {
+            self.index += 1;
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::floattype);
+            exit(1);
+        }
+    }
+    fn IntegerType(&mut self)
+    {
+        if self.t[self.index].text  == "unsigned" 
+        {
+            self.index += 1;
 
+            if self.t[self.index].text  == "char" || self.t[self.index].text  == "short" || self.t[self.index].text  == "int" || self.t[self.index].text  == "long"
+            {
+                self.index += 1;
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::integertype);
+                exit(1);
+            }  
+        }
+        else if self.t[self.index].text  == "char" || self.t[self.index].text  == "short" || self.t[self.index].text  == "int" || self.t[self.index].text  == "long"
+        {
+            self.index += 1;
+        } 
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::integertype);
+            exit(1);
+        }
+    }
+    fn DataType(&mut self) 
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd'
+        {
+            Parser::FloatType(self);
+        }
+        else if self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+        {
+            Parser::IntegerType(self);
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::datatype);
+            exit(1);
+        }
+    }
+    fn IntConstant(&mut self)
+    {
+        let mut i: usize = 1;
+        if self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            while i < self.t[self.index].text.len()
+            {
+                if !Digit(self.t[self.index].text.as_bytes()[i] as char)
+                {
+                    println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::intconstant);
+                    exit(1);
+                }
+                i += 1;
+            }
+            self.index += 1;
+        }
+    }
+    fn FloatConstant(&mut self)
+    {
+        let mut i: usize = 1;
+        if self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            while i < self.t[self.index].text.len() 
+            {
+                if self.t[self.index].text.as_bytes()[i] as char == '.'
+                {
+                    i += 1;
+                    break;
+                }
+                else if !Digit(self.t[self.index].text.as_bytes()[i] as char)
+                {
+                    println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::floatconstant);
+                    exit(1);
+                }
+                i += 1;
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::floatconstant);
+            exit(1);
+        }
+        while i < self.t[self.index].text.len() 
+        {
+            if !Digit(self.t[self.index].text.as_bytes()[i] as char)
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::floatconstant);
+                exit(1);
+            }
+            i += 1;
+        }
+        self.index += 1;
+    }
+    fn Identifier(&mut self) 
+    {
+        let mut i: usize = 1;
+        if self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            while i < self.t[self.index].text.len()
+            {
+                if !(self.t[self.index].text.as_bytes()[i] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[i] as char) || Digit(self.t[self.index].text.as_bytes()[i] as char))
+                {
+                    println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::identifier);
+                    exit(1);
+                }
+                i += 1;
+            }
+            self.index += 1;
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::identifier);
+            exit(1);
+        }
+    }
+    fn Constant(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            if self.t[self.index].token_type.as_str() == "FloatConstant" || (self.t[self.index].token_type.as_str() == "Invalid" && self.t[self.index].text.contains("."))
+            {
+                Parser::FloatConstant(self);
+            }
+            else
+            {
+                Parser::IntConstant(self);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::constant);
+            exit(1);
+        }
+    }
+    fn Parameter(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd'
+        {
+            Parser::FloatType(self);
+            Parser::Identifier(self);
+        }
+        else if self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+        {
+            Parser::IntegerType(self);
+            Parser::Identifier(self);
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::parameter);
+            exit(1);
+        }
+    }
+    fn DeclarationType(&mut self) 
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd'
+        {
+            Parser::FloatType(self);
+            Parser::Identifier(self);
+        }
+        else if self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+        {
+            Parser::IntegerType(self);
+            Parser::Identifier(self);
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::declarationtype);
+            exit(1);
+        }
+    }
+    fn VariableDeclaration(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == '='
+        {
+            self.index += 1;
+            Parser::Constant(self);
+            if self.t[self.index].text.as_bytes()[0] as char == ';'
+            {
+                self.index += 1;
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::variabledeclaration);
+                exit(1);
+            }
+        }
+        else if self.t[self.index].text.as_bytes()[0] as char == ';'
+        {
+            self.index += 1;
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::variabledeclaration);
+            exit(1);
+        }
+    }
     fn solve(&mut self)
     {
-        Parser::MultOperator(self);
-        Parser::MultOperator(self);
-        Parser::MultOperator(self);
+        if self.t.len() == 0 
+        {
+            println!("No Tokens Detected.");
+            exit(1);
+        }
+        Parser::VariableDeclaration(self);
+        //println!("{}", Parser::Identifier(self));
         println!("Input program is syntactacilly correct.");
     }
 }
@@ -457,6 +681,7 @@ fn main() -> std::io::Result<()> {
     let mut f: Parser = Parser::init(all_tokens.clone());
     f.solve();
 
+    println!("Generating ours.xhtml file");
     let mut filename: String = args[1].to_string();
     filename.truncate(filename.len() - 2);
     filename.push_str("ours.xhtml");
