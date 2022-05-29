@@ -861,7 +861,20 @@ impl Parser
             if self.t[self.index].text == "="
             {
                 self.index += 1;
-                if self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+                if self.t[self.index].text.as_bytes()[0] as char == '(' || self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char) || self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+                {
+                    Parser::Expression(self);
+                    if self.t[self.index].text == ";"
+                    {
+                        self.index += 1;
+                    }
+                    else
+                    {
+                        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::assignment);
+                        exit(1);
+                    }
+                }
+                else if self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
                 {
                     while self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
                     {
@@ -876,19 +889,6 @@ impl Parser
                             exit(1);
                         }
                     }
-                    Parser::Expression(self);
-                    if self.t[self.index].text == ";"
-                    {
-                        self.index += 1;
-                    }
-                    else
-                    {
-                        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::assignment);
-                        exit(1);
-                    }
-                }
-                else if self.t[self.index].text.as_bytes()[0] as char == '(' || self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char) || self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
-                {
                     Parser::Expression(self);
                     if self.t[self.index].text == ";"
                     {
@@ -1033,7 +1033,7 @@ impl Parser
     }
     fn FunctionDeclaration(&mut self)
     {
-        if self.t[self.index].text == "="
+        if self.t[self.index].text == "("
         {
             Parser::ParameterBlock(self);
             if self.t[self.index].text == ";"
@@ -1115,7 +1115,7 @@ impl Parser
             {
                 Parser::VariableDeclaration(self);
             } 
-            else if self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd' || self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+            else if self.t[self.index].text == "("
             {
                 Parser::FunctionDeclaration(self);
             }
