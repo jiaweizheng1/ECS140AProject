@@ -1,7 +1,7 @@
 # ECS140AProject
 Member 1: Jiawei Zheng, jwzzheng@ucdavis.edu, 917196777
 
-Member 2: Roshan Ashok, , id
+Member 2: Roshan Ashok, roashok@ucdavis.edu, 914798424
 
 ## Stages
 We finished all stages.
