@@ -1,6 +1,7 @@
 use std::env;
 use std::io::Read;
 use std::fs::File;
+use std::io::prelude::*;
 use custom_error::custom_error;
 use std::process::exit; 
 
@@ -277,7 +278,7 @@ fn IntConstant(input: String) -> bool
     let mut i: usize = 1;
     if input.as_bytes()[0] as char == '-' || Digit(input.as_bytes()[0] as char)
     {
-        while(i < input.len())
+        while i < input.len()
         {
             if !Digit(input.as_bytes()[i] as char)
             {
@@ -299,9 +300,9 @@ fn FloatConstant(input: String) -> bool
     }
     if input.as_bytes()[0] as char == '-' || Digit(input.as_bytes()[0] as char)
     {
-        while(i < input.len())
+        while i < input.len() 
         {
-            if(input.as_bytes()[i] as char == '.')
+            if input.as_bytes()[i] as char == '.'
             {
                 i += 1;
                 break;
@@ -313,7 +314,7 @@ fn FloatConstant(input: String) -> bool
             i += 1;
         }
     }
-    while(i < input.len())
+    while i < input.len() 
     {
         if !Digit(input.as_bytes()[i] as char)
         {
@@ -330,7 +331,7 @@ fn Identifier(input: String) -> bool
 
     if input.as_bytes()[0] as char == '_' || Alpha(input.as_bytes()[0] as char)
     {
-        while(i < input.len())
+        while i < input.len()
         {
             if !(input.as_bytes()[i] as char == '_' || Alpha(input.as_bytes()[i] as char) || Digit(input.as_bytes()[i] as char))
             {
@@ -368,4 +369,7 @@ fn main() {
         println!("Token line_num: {}", all_tokens[index].line_num);
         println!("Token char_pos: {}\n", all_tokens[index].char_pos);
     }
+
+    let mut file = File::create("foo.txt");
+    file.write_all(b"Hello, world!");
 }
