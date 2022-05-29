@@ -612,7 +612,7 @@ impl Parser
     }
     fn VariableDeclaration(&mut self)
     {
-        if self.t[self.index].text.as_bytes()[0] as char == '='
+        if self.t[self.index].text == "="
         {
             self.index += 1;
             Parser::Constant(self);
@@ -626,13 +626,536 @@ impl Parser
                 exit(1);
             }
         }
-        else if self.t[self.index].text.as_bytes()[0] as char == ';'
+        else if self.t[self.index].text == ";"
         {
             self.index += 1;
         }
         else
         {
             println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::variabledeclaration);
+            exit(1);
+        }
+    }
+    fn Factor(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == '('
+        {
+            self.index += 1;
+            Parser::Expression(self);
+            if self.t[self.index].text.as_bytes()[0] as char == ')'
+            {
+                self.index += 1;
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::factor);
+                exit(1);
+            }
+        }
+        else if self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            Parser::Constant(self);
+        }
+        else if self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            Parser::Identifier(self);
+            if self.t[self.index].text.as_bytes()[0] as char == '('
+            {
+                self.index += 1;
+                if self.t[self.index].text.as_bytes()[0] as char == ')'
+                {
+                    self.index += 1;
+                }
+                else if self.t[self.index].text.as_bytes()[0] as char == '(' || self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char) || self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+                {
+                    Parser::Expression(self);
+                    if self.t[self.index].text.as_bytes()[0] as char == ')'
+                    {
+                        self.index += 1;
+                    }
+                    else if self.t[self.index].text.as_bytes()[0] as char == ','
+                    {
+                        while self.t[self.index].text.as_bytes()[0] as char == ','
+                        {
+                            self.index += 1;
+                            Parser::Expression(self);
+                        }
+                        if self.t[self.index].text.as_bytes()[0] as char == ')'
+                        {
+                            self.index += 1;
+                        }
+                        else
+                        {
+                            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::factor);
+                            exit(1);
+                        }
+                    }
+                    else
+                    {
+                        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::factor);
+                        exit(1);
+                    }
+                }
+                else
+                {
+                    println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::factor);
+                    exit(1);
+                }
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::factor);
+            exit(1);
+        }
+    }
+    fn Expression(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == '(' || self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char) || self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            Parser::SimpleExpression(self);
+            if self.t[self.index].text.as_bytes()[0] as char  == '=' || self.t[self.index].text.as_bytes()[0] as char == '<' || self.t[self.index].text.as_bytes()[0] as char == '>' || self.t[self.index].text.as_bytes()[0] as char == '!'
+            {
+                Parser::RelationOperator(self);
+                Parser::SimpleExpression(self);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::expression);
+            exit(1);
+        }
+    }
+    fn SimpleExpression(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == '(' || self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char) || self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            Parser::Term(self);
+            if self.t[self.index].text.as_bytes()[0] as char == '+' || self.t[self.index].text.as_bytes()[0] as char == '-'
+            {
+                while self.t[self.index].text.as_bytes()[0] as char == '+' || self.t[self.index].text.as_bytes()[0] as char == '-'
+                {
+                    Parser::AddOperator(self);
+                    Parser::Term(self);
+                }
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::simpleexpression);
+            exit(1);
+        }
+    }
+    fn Term(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == '(' || self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char) || self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            Parser::Factor(self);
+            if self.t[self.index].text.as_bytes()[0] as char == '*' || self.t[self.index].text.as_bytes()[0] as char == '/'
+            {
+                while self.t[self.index].text.as_bytes()[0] as char == '*' || self.t[self.index].text.as_bytes()[0] as char == '/'
+                {
+                    Parser::MultOperator(self);
+                    Parser::Factor(self);
+                }
+            }
+
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::term);
+            exit(1);
+        }
+    }
+    fn ReturnStatement(&mut self)
+    {
+        if self.t[self.index].text == "return"
+        {
+            self.index += 1;
+            Parser::Expression(self);
+            if self.t[self.index].text == ";"
+            {
+                self.index += 1;
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::returnstatement);
+                exit(1);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::returnstatement);
+            exit(1);
+        }
+    }
+    fn IfStatement(&mut self)
+    {
+        if self.t[self.index].text == "if"
+        {
+            self.index += 1;
+            if self.t[self.index].text == "("
+            {
+                self.index += 1;
+                Parser::Expression(self);
+                if self.t[self.index].text == ")"
+                {
+                    self.index += 1;
+                    Parser::Block(self);
+                }
+                else
+                {
+                    println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::ifstatement);
+                    exit(1);
+                }
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::ifstatement);
+                exit(1);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::ifstatement);
+            exit(1);
+        }
+    }
+    fn WhileLoop(&mut self)
+    {
+        if self.t[self.index].text == "while"
+        {
+            self.index += 1;
+            if self.t[self.index].text == "("
+            {
+                self.index += 1;
+                Parser::Expression(self);
+                if self.t[self.index].text == ")"
+                {
+                    self.index += 1;
+                    Parser::Block(self);
+                }
+                else
+                {
+                    println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::whileloop);
+                    exit(1);
+                }
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::whileloop);
+                exit(1);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::whileloop);
+            exit(1);
+        }
+    }
+    fn Assignment(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            Parser::Identifier(self);
+            if self.t[self.index].text == "="
+            {
+                self.index += 1;
+                if self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+                {
+                    while self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+                    {
+                        Parser::Identifier(self);
+                        if self.t[self.index].text == "="
+                        {
+                            self.index += 1;
+                        }
+                        else
+                        {
+                            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::assignment);
+                            exit(1);
+                        }
+                    }
+                    Parser::Expression(self);
+                    if self.t[self.index].text == ";"
+                    {
+                        self.index += 1;
+                    }
+                    else
+                    {
+                        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::assignment);
+                        exit(1);
+                    }
+                }
+                else if self.t[self.index].text.as_bytes()[0] as char == '(' || self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char) || self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+                {
+                    Parser::Expression(self);
+                    if self.t[self.index].text == ";"
+                    {
+                        self.index += 1;
+                    }
+                    else
+                    {
+                        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::assignment);
+                        exit(1);
+                    }
+                }
+                else
+                {
+                    println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::assignment);
+                    exit(1);
+                }
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::assignment);
+                exit(1);
+            }
+
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::assignment);
+            exit(1);
+        }
+    }
+    fn Statement(&mut self)
+    {
+        if self.t[self.index].text == "while"
+        {
+            Parser::WhileLoop(self);
+        }
+        else if self.t[self.index].text == "if"
+        {
+            Parser::IfStatement(self);
+        }
+        else if self.t[self.index].text == "return"
+        {
+            Parser::ReturnStatement(self);
+        }
+        else if self.t[self.index + 1].text == "=" && (self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char))
+        {
+            Parser::Assignment(self);
+        }
+        else if self.t[self.index].text.as_bytes()[0] as char == '(' || self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char) || self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+        {
+            Parser::Expression(self);
+            if self.t[self.index].text == ";"
+            {
+                self.index += 1;
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::statement);
+                exit(1);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::statement);
+            exit(1);
+        }
+    }
+    fn ParameterBlock(&mut self)
+    {
+        if self.t[self.index].text == "("
+        {
+            self.index += 1;
+            if self.t[self.index].text == ")"
+            {
+                self.index += 1;
+            }
+            else if self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd' || self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+            {
+                Parser::Parameter(self);
+                if self.t[self.index].text == ")"
+                {
+                    self.index += 1;
+                }
+                else if self.t[self.index].text == ","
+                {   
+                    while self.t[self.index].text == ","
+                    {
+                        self.index += 1;
+                        Parser::Parameter(self);
+                    }
+                    if self.t[self.index].text == ")"
+                    {
+                        self.index += 1;
+                    }
+                    else
+                    {
+                        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::parameterblock);
+                        exit(1);
+                    }
+                }
+                else
+                {
+                    println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::parameterblock);
+                    exit(1);
+                }
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::parameterblock);
+                exit(1);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::parameterblock);
+            exit(1);
+        }
+    }
+    fn Block(&mut self)
+    {
+        if self.t[self.index].text == "{"
+        {
+            self.index += 1;
+            while (self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd' || self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l') && (self.t[self.index + 2].text != "(" && self.t[self.index + 3].text != "(")
+            {
+                Parser::Declaration(self);
+            }
+            while self.t[self.index].text == "while" || self.t[self.index].text == "if" || self.t[self.index].text == "return" || self.t[self.index].text.as_bytes()[0] as char == '(' || self.t[self.index].text.as_bytes()[0] as char == '-' || Digit(self.t[self.index].text.as_bytes()[0] as char) || self.t[self.index].text.as_bytes()[0] as char == '_' || Alpha(self.t[self.index].text.as_bytes()[0] as char)
+            {
+                Parser::Statement(self);
+            }
+            while self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd' || self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l' && (self.t[self.index + 2].text == "(" || self.t[self.index + 3].text == "(")
+            {
+                Parser::FunctionDeclaration(self);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::block);
+            exit(1);
+        }
+    }
+    fn FunctionDeclaration(&mut self)
+    {
+        if self.t[self.index].text == "="
+        {
+            Parser::ParameterBlock(self);
+            if self.t[self.index].text == ";"
+            {
+                self.index += 1
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::functiondeclaration);
+                exit(1);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::functiondeclaration);
+            exit(1);
+        }
+    }
+    fn FunctionDefinition(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd' || self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+        {
+            Parser::DeclarationType(self);
+            Parser::ParameterBlock(self);
+            Parser::Block(self);
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::functiondefinition);
+            exit(1);
+        }
+    }
+    fn MainDeclaration(&mut self)
+    {
+        if self.t[self.index].text == "void"
+        {
+            self.index += 1;
+            if self.t[self.index].text == "main"
+            {
+                self.index += 1;
+                if self.t[self.index].text == "("
+                {
+                    self.index += 1;
+                    if self.t[self.index].text == ")"
+                    {
+                        self.index += 1;
+                        Parser::Block(self);
+                    }
+                    else
+                    {
+                        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::maindeclaration);
+                        exit(1);
+                    }
+                }
+                else
+                {
+                    println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::maindeclaration);
+                    exit(1);
+                }
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::maindeclaration);
+                exit(1);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::maindeclaration);
+            exit(1);
+        }
+    }
+    fn Declaration(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd'|| self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+        {
+            Parser::DeclarationType(self);
+            if self.t[self.index].text == "=" || self.t[self.index].text == ";"
+            {
+                Parser::VariableDeclaration(self);
+            } 
+            else if self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd' || self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+            {
+                Parser::FunctionDeclaration(self);
+            }
+            else
+            {
+                println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::declaration);
+                exit(1);
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::declaration);
+            exit(1);
+        }
+    }
+    fn Program(&mut self)
+    {
+        if self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd'|| self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+        {
+            while self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd'|| self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+            {
+                Parser::Declaration(self);
+            }
+            Parser::MainDeclaration(self);
+            while self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd' || self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+            {
+                Parser::FunctionDeclaration(self);
+            }
+        }
+        else if self.t[self.index].text == "void"
+        {
+            Parser::MainDeclaration(self);
+            while self.t[self.index].text.as_bytes()[0] as char == 'f' || self.t[self.index].text.as_bytes()[0] as char == 'd' || self.t[self.index].text.as_bytes()[0] as char == 'u' || self.t[self.index].text.as_bytes()[0] as char == 'c' || self.t[self.index].text.as_bytes()[0] as char == 's' || self.t[self.index].text.as_bytes()[0] as char == 'i' || self.t[self.index].text.as_bytes()[0] as char == 'l'
+            {
+
+            }
+        }
+        else
+        {
+            println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::program);
             exit(1);
         }
     }
@@ -643,8 +1166,7 @@ impl Parser
             println!("No Tokens Detected.");
             exit(1);
         }
-        Parser::VariableDeclaration(self);
-        //println!("{}", Parser::Identifier(self));
+        Parser::Program(self);
         println!("Input program is syntactacilly correct.");
     }
 }
