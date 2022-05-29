@@ -5,10 +5,7 @@ use std::io::prelude::*;
 use custom_error::custom_error;
 use std::process::exit; 
 
-custom_error!{pub MyError
-    Invalid = "Syntax error at character position"
-}
-
+#[derive(Clone)]
 enum TokenType
 {
     IntConstant, 
@@ -35,6 +32,7 @@ impl TokenType
     }
 }
 
+#[derive(Clone)]
 struct Token
 {
     text: String,
@@ -344,23 +342,75 @@ fn Identifier(input: String) -> bool
     return false;
 }
 
+custom_error!{pub MyError
+    multoperator = "MultOperator := * | /",
+    addoperator = "AddOperator := + | -",
+    relationoperator = "RelationOperator := ( == ) | < | > | ( <= ) | ( >= ) | ( != )"
+}
+
+struct Parser
+{
+    t: Vec<Token>,
+    index: usize
+}
+
+impl Parser
+{
+    fn init(tokens: Vec<Token>) -> Parser
+    {
+        return Parser
+        {
+            t: tokens,
+            index: 0
+        }
+    }
+    fn MultOperator(&mut self) -> bool
+    {
+        if self.t[self.index].text.len() == 1  && (self.t[self.index].text.as_bytes()[0] as char == '*' || self.t[self.index].text.as_bytes()[0] as char == '/')
+        {
+            self.index += 1;
+            return true;
+        }
+        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::multoperator);
+        exit(1);
+    }
+    fn AddOperator(&mut self) -> bool
+    {
+        if self.t[self.index].text.len() == 1  && (self.t[self.index].text.as_bytes()[0] as char == '+' || self.t[self.index].text.as_bytes()[0] as char == '-')
+        {
+            self.index += 1;
+            return true;
+        }
+        println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::addoperator);
+        exit(1);
+    }
+    fn solve(&mut self)
+    {
+        Parser::AddOperator(self);
+        println!("Input program is syntactacilly correct.");
+    }
+}
+
 fn main() -> std::io::Result<()> {
     //collect additional arguments after "cargo run" for txt file input name
     let args: Vec<String> = env::args().collect();
 
     if args.len() == 1 || args.len() > 2 
     {
-        println!("Usage: cargo run example.x");
+        println!("Usage: cargo run example#.x");
         exit(1);
     }
 
     let f: CStream = CStream::init(&args[1]);
+
+    //Print File Contents//
     println!("{:?}", f.contents);
 
     //---------IMPORTANT--------//
     //all_tokens is here!!!!!!!!//
     let all_tokens: Vec<Token> = Scanner(f.contents);
 
+    //Print All Tokens//
     println!("\n");
     for index in 0..all_tokens.len()
     {
@@ -369,6 +419,9 @@ fn main() -> std::io::Result<()> {
         println!("Token line_num: {}", all_tokens[index].line_num);
         println!("Token char_pos: {}\n", all_tokens[index].char_pos);
     }
+
+    let mut f: Parser = Parser::init(all_tokens.clone());
+    f.solve();
 
     let mut filename: String = args[1].to_string();
     filename.truncate(filename.len() - 2);
@@ -383,14 +436,6 @@ fn main() -> std::io::Result<()> {
     file.write_all(b"<body bgcolor=\"navy\" text=\"orange\" link=\"orange\" vlink=\"orange\">\n")?;
     file.write_all(b"<font face=\"Courier New\">\n")?;
     file.write_all(b" ")?;
-
-    let identifier_prefix: String = "<font color=\"yellow\">".to_string();
-    let constant_prefix: String = "<font color=\"aqua\"><b>".to_string();
-    let key_op_prefix: String = "<font color=\"white\"><b>".to_string();
-
-    let suffix: String = "</b></font>".to_string();
-    let end_newline: String = "<br />\n".to_string();
-    let space: String = "&nbsp;".to_string();
 
     let mut first_word: bool = true;
 
@@ -427,19 +472,19 @@ fn main() -> std::io::Result<()> {
 
                     if all_tokens[index].text == "<"
                     {
-                        file.write_all(b"&lt;");
+                        file.write_all(b"&lt;")?;
                     }
                     else if all_tokens[index].text == "<="
                     {
-                        file.write_all(b"&lt=;");
+                        file.write_all(b"&lt=;")?;
                     }
                     else if all_tokens[index].text == ">"
                     {
-                        file.write_all(b"&gt;");
+                        file.write_all(b"&gt;")?;
                     }
                     else if all_tokens[index].text == ">="
                     {
-                        file.write_all(b"&gt;=");
+                        file.write_all(b"&gt;=")?;
                     }
                     else
                     {
@@ -488,19 +533,19 @@ fn main() -> std::io::Result<()> {
 
                     if all_tokens[index].text == "<"
                     {
-                        file.write_all(b"&lt;");
+                        file.write_all(b"&lt;")?;
                     }
                     else if all_tokens[index].text == "<="
                     {
-                        file.write_all(b"&lt=;");
+                        file.write_all(b"&lt=;")?;
                     }
                     else if all_tokens[index].text == ">"
                     {
-                        file.write_all(b"&gt;");
+                        file.write_all(b"&gt;")?;
                     }
                     else if all_tokens[index].text == ">="
                     {
-                        file.write_all(b"&gt;=");
+                        file.write_all(b"&gt;=")?;
                     }
                     else
                     {
@@ -546,19 +591,19 @@ fn main() -> std::io::Result<()> {
 
                     if all_tokens[index].text == "<"
                     {
-                        file.write_all(b"&lt;");
+                        file.write_all(b"&lt;")?;
                     }
                     else if all_tokens[index].text == "<="
                     {
-                        file.write_all(b"&lt=;");
+                        file.write_all(b"&lt=;")?;
                     }
                     else if all_tokens[index].text == ">"
                     {
-                        file.write_all(b"&gt;");
+                        file.write_all(b"&gt;")?;
                     }
                     else if all_tokens[index].text == ">="
                     {
-                        file.write_all(b"&gt;=");
+                        file.write_all(b"&gt;=")?;
                     }
                     else
                     {
@@ -601,19 +646,19 @@ fn main() -> std::io::Result<()> {
 
                 if all_tokens[index].text == "<"
                 {
-                    file.write_all(b"&lt;");
+                    file.write_all(b"&lt;")?;
                 }
                 else if all_tokens[index].text == "<="
                 {
-                    file.write_all(b"&lt=;");
+                    file.write_all(b"&lt=;")?;
                 }
                 else if all_tokens[index].text == ">"
                 {
-                    file.write_all(b"&gt;");
+                    file.write_all(b"&gt;")?;
                 }
                 else if all_tokens[index].text == ">="
                 {
-                    file.write_all(b"&gt;=");
+                    file.write_all(b"&gt;=")?;
                 }
                 else
                 {
