@@ -345,7 +345,30 @@ fn Identifier(input: String) -> bool
 custom_error!{pub MyError
     multoperator = "MultOperator := * | /",
     addoperator = "AddOperator := + | -",
-    relationoperator = "RelationOperator := ( == ) | < | > | ( <= ) | ( >= ) | ( != )"
+    relationoperator = "RelationOperator := ( == ) | < | > | ( <= ) | ( >= ) | ( != )",
+    factor = "Factor := ( ( Expression ) ) | Constant | (Identifier [ ( [ Expression {{, Expression}} ] ) ] )",
+    term = "Term := Factor {{ MultOperator Factor }}",
+    simpleexpression = "SimpleExpression := Term {{ AddOperator Term }}",
+    expression = "Expression := SimpleExpression [ RelationOperator SimpleExpression ]",
+    returnstatement = "ReturnStatement := return Expression ;",
+    ifstatement = "IfStatement := if ( Expression ) Block",
+    whileloop = "WhileLoop := while ( Expression ) Block",
+    assignment = "Assignment := Identifier = {{ Identifier =}} Expression ;",
+    floattype = "FloatType := float | double",
+    integertype = "IntergerType := [unsigned] ( char | short | int | long )",
+    parameter = "Parameter := DataType Identifier",
+    statement = "Statement := Assignment | Whileloop | IfStatement | ReturnStatement | (Expression ;)",
+    constant = "Constant := IntConstant | FloatConstant",
+    datatype = "DataType := IntergerType | FloatType",
+    parameterblock = "ParameterBlock := ( [Parameter {{, Parameter}}] )",
+    block = "Block := {{ {{Declaration}} {{Statement}} {{FunctionDefinition}} }}",
+    functiondeclaration = "FunctionDeclaration := ParameterBlock ;",
+    variabledeclaration = "VariableDDeclaration := [= Constant] ;",
+    declarationtype = "DeclarationType := DataType Identifier",
+    functiondefinition = "FunctionDefinition := DeclarationType ParameterBlock Block",
+    maindeclaration = "MainDeclaration := void main ( ) Block",
+    declaration = "Declaration := DeclarationType (VariableDeclaration | FunctionDeclaration)",
+    program = "Program := {{Declaration}} MainDeclaration {{FunctionDefinition}}"
 }
 
 struct Parser
@@ -366,27 +389,38 @@ impl Parser
     }
     fn MultOperator(&mut self) -> bool
     {
-        if self.t[self.index].text.len() == 1  && (self.t[self.index].text.as_bytes()[0] as char == '*' || self.t[self.index].text.as_bytes()[0] as char == '/')
+        if self.t.len() > self.index && (self.t[self.index].text == "*" || self.t[self.index].text == "/")
         {
             self.index += 1;
             return true;
+        }
+        if self.t.len() == self.index
+        {
+            self.index -= 1;
         }
         println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::multoperator);
         exit(1);
     }
     fn AddOperator(&mut self) -> bool
     {
-        if self.t[self.index].text.len() == 1  && (self.t[self.index].text.as_bytes()[0] as char == '+' || self.t[self.index].text.as_bytes()[0] as char == '-')
+        if self.t.len() > self.index && (self.t[self.index].text  == "+" || self.t[self.index].text == "-")
         {
             self.index += 1;
             return true;
         }
+        if self.t.len() == self.index
+        {
+            self.index -= 1;
+        }
         println!("Error at Line {} Character {}. The syntax should be: {}.", self.t[self.index].line_num, self.t[self.index].char_pos, MyError::addoperator);
         exit(1);
     }
+
     fn solve(&mut self)
     {
-        Parser::AddOperator(self);
+        Parser::MultOperator(self);
+        Parser::MultOperator(self);
+        Parser::MultOperator(self);
         println!("Input program is syntactacilly correct.");
     }
 }
