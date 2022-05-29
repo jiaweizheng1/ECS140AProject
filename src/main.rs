@@ -147,7 +147,7 @@ fn Scanner(input: String) -> Vec<Token>
         }
         else if input.as_bytes()[i] as char == '\n'
         {
-            if text.len() > 1
+            if text.len() > 0
             {
                 for x in 0..keywords.len()
                 {
@@ -349,13 +349,15 @@ fn main() {
 
     if args.len() == 1 || args.len() > 2 
     {
-        println!("Error: Missing File Name");
+        println!("Usage: cargo run example.x");
         exit(1);
     }
 
     let mut f: CStream = CStream::init(&args[1]);
     println!("{:?}", f.contents);
 
+    //---------IMPORTANT--------//
+    //all_tokens is here!!!!!!!!//
     let mut all_tokens: Vec<Token> = Scanner(f.contents);
 
     println!("\n");
