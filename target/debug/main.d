@@ -1,1 +1,1 @@
-/home/jiawei/Documents/ECS140A/Project/target/debug/main: /home/jiawei/Documents/ECS140A/Project/src/main.rs
+/home/jiawei/Documents/ECS140A/parser/target/debug/main: /home/jiawei/Documents/ECS140A/parser/src/main.rs
